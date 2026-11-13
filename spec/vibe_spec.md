@@ -86,7 +86,10 @@ Daftar package resmi yang digunakan pada `pubspec.yaml`:
     - Ikon kamera kustom (`CameraIconWidget`) berwarna Indigo dengan badge pensil edit putih-indigo di pojok kanan bawah.
     - Judul: `"Ambil & Edit Gambar"`.
     - Subtitle: `"Ambil foto, potong, putar, dan simpan"`.
-    - Aksi: Memeriksa izin kamera -> membuka kamera via `image_picker` -> jika berhasil, berpindah ke `EditPreviewScreen`.
+    - Aksi: Menampilkan Modal Bottom Sheet pilihan sumber gambar (*"Kamera"* vs *"Galeri"*).
+      - Jika memilih **Kamera**: Memeriksa izin kamera -> membuka kamera bawaan via `image_picker` (`ImageSource.camera`).
+      - Jika memilih **Galeri**: Memeriksa izin galeri -> membuka pemilih foto via `image_picker` (`ImageSource.gallery`).
+      - Setelah foto dipilih: Berpindah ke `EditPreviewScreen`.
   - **Card 2 ("Scan Barcode")**:
     - Ikon barcode kustom (`BarcodeIconWidget`) dengan 4 sudut braket pembatas dan garis barcode vertikal.
     - Judul: `"Scan Barcode"`.
