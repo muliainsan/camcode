@@ -1,108 +1,205 @@
-Vibe Coding Prompt: Flutter SnapScan App
+# Vibe Coding Spec & Prompt: Flutter SnapScan (Cam & Scan) App
 
-Instruksi untuk AI / LLM:
-Tolong bertindak sebagai Senior Flutter Developer. Saya ingin Anda membuatkan kode lengkap untuk aplikasi Flutter bernama "SnapScan" (atau "Cam & Scan") berdasarkan panduan vibe, spesifikasi desain, dan fitur di bawah ini. Tolong buatkan kodenya sedemikian rupa agar bersih, modular, dan langsung bisa dijalankan.
+Dokumen spesifikasi dan panduan pengembangan aplikasi Flutter **SnapScan** (judul antarmuka: **"Cam & Scan"**). Dokumen ini telah diselaraskan dengan implementasi kode produksi terkini yang terdapat pada repositori `camcode`.
 
-REFERENSI DESAIN (PENTING):
-Saya telah melampirkan/menyediakan gambar referensi UI dengan nama file desain.jpeg. Tolong gunakan gambar tersebut sebagai referensi utama (Source of Truth) untuk membuat tata letak (layout), proporsi Card, penempatan tombol, overlay scanner, dan elemen antarmuka lainnya agar semirip mungkin dengan gambar tersebut.
+---
 
-1. Konteks & Tujuan
+## 📸 Referensi Desain (Source of Truth)
+- **File Referensi**: `desain.jpeg` (atau `spec/design.jpeg`)
+- **Tujuan**: Menghasilkan tata letak antarmuka, proporsi tombol kartu, palet warna, overlay pemindai, dan interaksi yang presisi menyerupai referensi desain.
 
-Aplikasi ini adalah utilitas sederhana namun terlihat sangat profesional. Fokus utamanya adalah UI/UX yang clean, mulus (smooth), dan user-friendly (mudah dioperasikan dengan satu tangan).
+---
 
-Fitur Utama:
+## 1. Konteks & Ringkasan Aplikasi
+Aplikasi utilitas kamera, penyuntingan gambar, dan pemindai barcode/QR code berstandar **Material Design 3**. Mengutamakan UI/UX yang bersih, animasi transisi halus (*smooth*), kenyamanan navigasi satu tangan, tata letak responsif, dan penanganan perizinan (*runtime permissions*) yang aman tanpa crash.
 
-Mengambil foto dari kamera, melakukan edit ringan (crop/rotate), dan menyimpan ke galeri.
+### Fitur Utama:
+1. **Ambil & Edit Gambar (Camera & Edit)**
+   - Mengambil foto langsung dari kamera perangkat bawaan.
+   - Memotong (*crop*) dengan berbagai preset rasio (asli, 1:1, 4:3, 16:9).
+   - Memutar (*rotate*) 90° searah jarum jam secara instan dan diproses presisi pada level *byte image*.
+   - Menyimpan hasil foto ke galeri perangkat dengan konfirmasi *haptic feedback* dan notifikasi status mengambang (*floating pill toast*).
+2. **Pemindai Barcode & QR Code (Barcode Scanner)**
+   - Pemindaian barcode 1D dan QR code 2D secara *real-time* dengan kamera langsung.
+   - *Viewfinder overlay* berlatar gelap dengan sudut *glowing neon cyan* animasi berdenyut.
+   - Kontrol lampu kilat/senter (*torch*) dan penggantian kamera depan/belakang (*flip camera*).
+   - *Modal Bottom Sheet* hasil scan dengan visualisasi garis barcode, penampil teks hasil pindai, tombol **Salin Data** ke *clipboard*, dan tombol **Scan Lagi**.
+3. **Tata Letak Dinamis & Responsif**
+   - Kartu menu utama didesain dengan rasio 1:1 (bujur sangkar proporsional).
+   - **Layar Lebar (Tablet / Desktop / Landscape >= 600px)**: Kartu menu otomatis tampil berdampingan (**Kanan - Kiri**).
+   - **Layar Kecil (Smartphone Portrait < 600px)**: Kartu menu otomatis tersusun vertikal (**Atas - Bawah**).
+4. **Penanganan Izin Aman (Anti-Crash)**
+   - Pengecekan izin kamera dan galeri secara dinamis dan aman dari *crash*.
+   - Menyediakan dialog peringatan edukatif dengan tombol langsung ke Pengaturan Perangkat (`openAppSettings()`) jika izin ditolak permanen.
 
-Melakukan scan barcode/QR code dan menyalin hasilnya.
+---
 
-2. Tech Stack & Dependencies
+## 2. Tech Stack & Dependencies Terkini
+Daftar package resmi yang digunakan pada `pubspec.yaml`:
 
-Pastikan Anda menggunakan versi terbaru atau yang stabil dari package berikut (asumsikan sudah ditambahkan di pubspec.yaml):
+| Package | Versi | Fungsi Utama |
+|---|---|---|
+| `image_picker` | `^1.2.4` | Membuka antarmuka kamera bawaan perangkat untuk mengambil foto beresolusi penuh. |
+| `image_cropper` | `^13.0.0` | Antarmuka interaktif pemotongan gambar (uCrop untuk Android & iOS, dialog untuk Web). |
+| `image_gallery_saver` | `^2.0.3` | Menyimpan *byte image* hasil edit langsung ke galeri / penyimpanan media perangkat. |
+| `mobile_scanner` | `^7.5.0` | Pemindaian barcode dan QR code kamera *live-feed* berkecepatan dan akurasi tinggi. |
+| `permission_handler` | `^13.0.2` | Pengelolaan izin akses runtime (kamera, galeri, foto, penyimpanan). |
+| `image` | `^4.12.0` | Memproses rotasi 90° pada *raw byte* citra (`img.copyRotate`) sebelum disimpan ke penyimpanan permanen. |
+| `flutter/services.dart` | *Built-in* | Umpan balik getaran (*haptic feedback*), akses *clipboard*, dan konfigurasi tema *status bar*. |
+| `cupertino_icons` | `^1.0.8` | Koleksi ikon pendukung antarmuka iOS/Cupertino. |
 
-camera (Untuk akses kamera native)
+---
 
-image_cropper (Untuk fungsi crop & rotasi gambar)
+## 3. Design System & "The Vibe" (Material Design 3)
 
-image_gallery_saver (Untuk menyimpan gambar ke galeri device)
+### Palet Warna Resmi (`AppColors`):
+- **Primary (Indigo/Deep Blue)**: `#3949AB`
+- **Primary Dark**: `#283593`
+- **Primary Light**: `#5C6BC0`
+- **Background Utama (Off-White)**: `#F7F8FA`
+- **Surface**: `#FFFFFF`
+- **Dark Surface (Layar Pratinjau)**: `#1E1E1E`
+- **Accent / Success (Emerald Green)**: `#00A86B` (Gelap: `#008F5B`)
+- **Scanner Viewfinder Glow (Neon Cyan)**: `#4CE0D2` (Transparan: `0x804CE0D2`)
+- **Toast Background (Dark Slate Pill)**: `#262C36`
+- **Tipografi Utama**: Dark `#1A1F2C`, Muted `#757575`, Light `#FFFFFF`
 
-mobile_scanner (Untuk scan barcode/QR code)
+### Karakteristik Visual & Pengalaman Pengguna (UX):
+- **Tipografi**: Font *Roboto* modern dengan *letter-spacing* yang nyaman dibaca.
+- **Card**: Sudut melengkung halus (`BorderRadius.circular(20)`), elevasi lembut dengan *ambient box-shadow*, dan efek sentuh *InkWell*.
+- **Transisi**: Menggunakan `CupertinoPageTransitionsBuilder` untuk animasi perpindahan halaman yang mulus di Android maupun iOS.
+- **Haptic Feedback**: Getaran responsif pada setiap interaksi tombol (`lightImpact`), deteksi barcode (`heavyImpact`), dan pergantian senter/kamera (`selectionClick`).
 
-permission_handler (Untuk meminta izin akses kamera & storage)
+---
 
-flutter/services.dart (Untuk fitur Haptic Feedback dan Clipboard)
+## 4. Struktur Layar & Alur Interaksi
 
-3. Design System & "The Vibe"
+### Screen 1: Home Screen (`MainMenuScreen`)
+- **AppBar**:
+  - Judul: `"Cam & Scan"` (rata tengah, warna teks putih tebal, latar Indigo `#3949AB`, elevasi 0).
+- **Body**:
+  - Teks instruksi: `"Pilih fitur yang ingin digunakan:"` (font size 24, font weight 700).
+  - Menggunakan `LayoutBuilder` untuk adaptasi responsif:
+    - **Layar >= 600px**: Baris horisontal (`Row`) berisi 2 kartu bujur sangkar (maksimal lebar 280px per kartu).
+    - **Layar < 600px**: Kolom vertikal (`Column`) berisi 2 kartu bujur sangkar (maksimal lebar 330px per kartu).
+  - **Card 1 ("Ambil & Edit Gambar")**:
+    - Ikon kamera kustom (`CameraIconWidget`) berwarna Indigo dengan badge pensil edit putih-indigo di pojok kanan bawah.
+    - Judul: `"Ambil & Edit Gambar"`.
+    - Subtitle: `"Ambil foto, potong, putar, dan simpan"`.
+    - Aksi: Memeriksa izin kamera -> membuka kamera via `image_picker` -> jika berhasil, berpindah ke `EditPreviewScreen`.
+  - **Card 2 ("Scan Barcode")**:
+    - Ikon barcode kustom (`BarcodeIconWidget`) dengan 4 sudut braket pembatas dan garis barcode vertikal.
+    - Judul: `"Scan Barcode"`.
+    - Subtitle: `"Pindai & ambil data dari barcode"`.
+    - Aksi: Memeriksa izin kamera -> berpindah ke `ScannerScreen`.
 
-Aplikasi ini harus mengusung Material Design 3, dengan memperhatikan komposisi visual pada file desain.jpg.
+---
 
-Warna Utama (Primary): Indigo (#3F51B5) atau Deep Purple.
+### Screen 2: Camera & Edit Screen (`EditPreviewScreen`)
+- **AppBar**:
+  - Judul: `"Preview & Edit"` (rata tengah, tombol kembali panah putih di sebelah kiri).
+- **Area Pratinjau Tengah**:
+  - Menggunakan latar belakang gelap (`#1E1E1E`).
+  - Menampilkan gambar menggunakan `Image.memory` berbasis `Uint8List` agar kompatibel lintas platform (Web, Android, iOS, Desktop) tanpa kendala `Image.file`.
+  - Dilengkapi overlay bingkai pemotretan (`CropGridOverlay`) berupa 4 sudut L-bracket putih dan garis kisi bantu 3x3 (*rule-of-thirds*).
+- **Bottom Action Bar (Container Putih)**:
+  - Tombol **"Potong"**: Ikon `Icons.crop`, membuka `ImageCropper` untuk pemotongan gambar fleksibel.
+  - Tombol **"Putar"**: Ikon `Icons.rotate_right_rounded`, merotasi tampilan 90° (`_quarterTurns = (_quarterTurns + 1) % 4`).
+  - Tombol **"Simpan ke Galeri"**: Tombol pil hijau Emerald (`#00A86B`) dengan ikon `Icons.save_rounded`.
+- **Alur Penyimpanan**:
+  1. Memeriksa izin galeri/penyimpanan melalui `PermissionHelper`.
+  2. Jika gambar telah dirotasi, panggil `img.copyRotate` pada *bytes* gambar untuk memastikan rotasi tersimpan permanen.
+  3. Simpan ke galeri menggunakan `ImageGallerySaver.saveImage`.
+  4. Berikan getaran *haptic feedback* (`heavyImpact`).
+  5. Tampilkan notifikasi pil gelap mengambang (*floating SnackBar*): `✅ Gambar berhasil disimpan!`.
+  6. Beri jeda 1.5 detik, lalu otomatis *pop* kembali ke menu utama.
 
-Warna Latar (Background): Off-White (#F8F9FA).
+---
 
-Warna Aksi Sukses (Accent): Emerald Green (#2ECC71).
+### Screen 3: Barcode Scanner Screen (`ScannerScreen`)
+- **AppBar**:
+  - Judul: `"Scan Barcode"` (rata tengah).
+  - Aksi kanan: Tombol *flip camera* (`Icons.cameraswitch_rounded`) dan tombol senter (*torch toggle*).
+- **Kamera Live-Feed**:
+  - Menggunakan `MobileScanner` dengan `MobileScannerController` (kecepatan normal, batas waktu deteksi 250ms).
+- **Overlay Viewfinder (`ScannerOverlay`)**:
+  - Cutout transparan di bagian tengah dengan latar semi-gelap di sekelilingnya.
+  - Sudut bingkai berwarna *neon cyan* bercahaya (`#4CE0D2`) dengan animasi denyut (*pulse glow*).
+- **Alur Deteksi & Modal Bottom Sheet**:
+  1. Saat barcode/QR terdeteksi, kunci status pemrosesan (`_isProcessing = true`) agar tidak memicu deteksi ganda.
+  2. Jalankan *haptic feedback* (`heavyImpact`).
+  3. Munculkan `showModalBottomSheet` (`ScanResultSheet`):
+     - *Handle bar* abu-abu di bagian atas.
+     - Chip nama format barcode (misal `QR_CODE`, `CODE_128`, `EAN_13`).
+     - Ilustrasi grafis barcode dan teks kode yang dapat dipilih (*SelectableText*).
+     - Tombol **"Salin Data"** (Filled Indigo): Menyalin teks ke *clipboard*, memberi *haptic feedback*, dan menampilkan *SnackBar* konfirmasi sukses.
+     - Tombol **"Scan Lagi"** (Outlined): Menutup *bottom sheet* dan mengaktifkan kembali pemindai kamera secara otomatis.
 
-Font/Tipografi: Gunakan font default (Roboto) namun dengan TextTheme yang modern (ukuran teks besar di tombol).
+---
 
-Vibe UX: Tambahkan animasi transisi standar yang mulus, Haptic Feedback saat tombol ditekan atau barcode berhasil di-scan, dan gunakan Card dengan elevation yang lembut (soft shadow).
+## 5. Modul Penanganan Perizinan (`PermissionHelper`)
+Terletak di `lib/utils/permission_helper.dart` dengan logika keamanan berikut:
+1. **Platform Awareness**: Bypass otomatis pada platform Web (`kIsWeb`), karena perizinan ditangani langsung oleh dialog browser.
+2. **Izin Kamera**:
+   - Jika sudah berstatus `isGranted`, langsung lanjutkan aksi.
+   - Jika `isPermanentlyDenied`, munculkan `AlertDialog` dengan tombol langsung menuju `openAppSettings()`.
+   - Jika ditolak biasa, tampilkan `SnackBar` merah informatif tanpa menyebabkan *force close* / *crash*.
+3. **Izin Galeri / Penyimpanan**:
+   - Menyesuaikan Android 13+ (memeriksa `Permission.photos` terlebih dahulu) dan Android 12 ke bawah (`Permission.storage`).
+   - Menyediakan dialog panduan jika izin ditolak secara permanen.
 
-4. Struktur Layar (Screens)
+---
 
-Tolong buatkan minimal 3 layar berikut, dan sesuaikan detailnya dengan desain.jpg:
+## 6. Struktur File Proyek (`camcode/lib/`)
+```text
+lib/
+├── constants/
+│   └── app_colors.dart            # Konstanta palet warna Material 3 & tema
+├── utils/
+│   └── permission_helper.dart     # Penanganan runtime permissions kamera & storage aman
+├── widgets/
+│   ├── feature_card.dart          # Kartu menu interaktif 1:1 (square) dengan haptic
+│   ├── camera_icon_widget.dart    # Ikon kustom kamera + badge pensil
+│   ├── barcode_icon_widget.dart   # Ikon kustom barcode dengan framing brackets
+│   ├── crop_grid_overlay.dart     # Viewfinder grid 3x3 untuk layar preview gambar
+│   ├── scanner_overlay.dart       # Cutout fullscreen & sudut glowing cyan berdenyut
+│   └── scan_result_sheet.dart     # Bottom sheet hasil scan barcode & aksi salin
+├── screens/
+│   ├── main_menu_screen.dart      # Layar utama (responsif wide/narrow layout)
+│   ├── edit_preview_screen.dart   # Layar pratinjau foto, rotasi byte, crop, dan simpan
+│   └── scanner_screen.dart        # Layar live view pemindai barcode & kontrol senter
+└── main.dart                      # Root widget, tema, dan inisialisasi aplikasi
+```
 
-Screen 1: Home Screen (MainMenuScreen)
+---
 
-App Bar: Judul "Cam & Scan" atau "SnapScan" (tengah).
+## 7. Konfigurasi Native Tambahan
 
-Body: Teks header "Pilih fitur yang ingin digunakan:".
+### Android (`android/app/src/main/AndroidManifest.xml`):
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Perizinan Kamera & Penyimpanan Media -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
-Widget: 2 buah Card besar bergaya tombol (bisa di-tap menggunakan InkWell).
+    <application ...>
+        <!-- Activity untuk Image Cropper (uCrop) -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+    </application>
+</manifest>
+```
 
-Card 1: Ikon Kamera besar, teks "Ambil & Edit Gambar". Mengarah ke fitur Kamera.
-
-Card 2: Ikon Barcode besar, teks "Scan Barcode". Mengarah ke fitur Scanner.
-
-Vibe: Layout rata tengah (Center), jarak antar elemen lega (spacious).
-
-Screen 2: Camera & Edit Screen (EditPreviewScreen)
-
-Alur: Saat Card 1 di-tap, jalankan kamera bawaan/plugin camera untuk mengambil foto. Setelah foto diambil, masuk ke EditPreviewScreen.
-
-UI Layar Edit:
-
-Gambar hasil jepretan mendominasi layar (di tengah).
-
-Di bawah (BottomNavigationBar / Row), terdapat 3 aksi utama:
-
-Crop: Membuka UI image_cropper.
-
-Putar (Rotate): Memutar gambar.
-
-Simpan ke Galeri (Tombol Hijau): Menyimpan gambar menggunakan image_gallery_saver.
-
-Notifikasi: Setelah berhasil disimpan, munculkan Snackbar sukses berwarna hijau di bawah ("✅ Gambar berhasil disimpan!"), berikan haptic feedback, lalu pop (kembali) ke Home Screen.
-
-Screen 3: Barcode Scanner Screen (ScannerScreen)
-
-UI: Menggunakan kamera live view secara full screen dari mobile_scanner.
-
-Overlay: Buat overlay semi-transparan dengan kotak fokus (frame) di tengah layar agar user tahu ke mana harus mengarahkan barcode (persis seperti di desain.jpg).
-
-Interaksi:
-
-Saat barcode terdeteksi -> Beri haptic feedback -> Pause kamera.
-
-Tampilkan showModalBottomSheet berisi hasil scan.
-
-Di dalam Bottom Sheet, sediakan 2 tombol: "Salin Data" (copy ke clipboard menggunakan Clipboard.setData) dan "Scan Lagi" (tutup bottom sheet dan resume kamera).
-
-5. Rules & Edge Cases (Penting!)
-
-Permission Handling: Tangani izin akses. Jika user menolak izin kamera atau galeri, tampilkan pesan error yang jelas atau tombol untuk membuka Settings.
-
-Loading State: Saat sedang memproses crop atau menyimpan gambar, tampilkan CircularProgressIndicator.
-
-Clean Code: Pisahkan UI komponen menjadi widget-widget kecil jika dirasa terlalu panjang, dan berikan komentar pada fungsi utama (logic kamera dan scanner).
-
-Output yang diharapkan:
-Berikan saya struktur kode lengkap (terutama bagian main.dart dan file-file screen). Anda bisa merangkumnya dalam struktur file modular atau menjadikannya satu file main.dart yang lengkap dan terstruktur dengan baik.
+### iOS (`ios/Runner/Info.plist`):
+```xml
+<key>NSCameraUsageDescription</key>
+<string>SnapScan memerlukan akses kamera untuk mengambil foto dan memindai barcode.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>SnapScan memerlukan akses ke galeri untuk melihat dan menyimpan foto hasil edit.</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>SnapScan memerlukan izin untuk menambahkan foto hasil edit ke galeri perangkat Anda.</string>
+```
