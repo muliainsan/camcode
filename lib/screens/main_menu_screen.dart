@@ -215,26 +215,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 800),
                       child: Column(
-                        crossAxisAlignment: isWide
-                            ? CrossAxisAlignment.center
-                            : CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Section Header Title
-                          Text(
-                            isWide
-                                ? 'Pilih fitur yang ingin digunakan:'
-                                : 'Pilih fitur yang ingin\ndigunakan:',
-                            textAlign: isWide ? TextAlign.center : TextAlign.start,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textDark,
-                              height: 1.25,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-
                           // Dynamic Menu Layout:
                           // Kanan-Kiri jika layar lebar, Atas-Bawah jika layar kecil
                           if (isWide)
